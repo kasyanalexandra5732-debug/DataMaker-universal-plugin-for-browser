@@ -30,3 +30,27 @@
 - **Chrome ContextMenus API** - контекстное меню
 
 ## 🏗 Архитектура
+расширение/
+├── manifest.json # Конфигурация и разрешения
+├── popup/ # Интерфейс расширения
+│ ├── popup.html # Структура popup-окна
+│ ├── popup.css # Стили интерфейса
+│ └── popup.js # Логика интерфейса
+├── content/ # Скрипты для веб-страниц
+│ └── content.js # Взаимодействие с DOM
+├── background/ # Фоновые процессы
+│ └── background.js # Service Worker
+└── lib/ # Вспомогательные модули
+└── utils.js # Утилиты
+
+## 💡 Ключевые особенности реализации
+
+### 1. **Асинхронная коммуникация**
+Используется надежная система обмена сообщениями между компонентами расширения:
+
+```javascript
+// popup → content
+chrome.tabs.sendMessage(tabId, {type: 'getSelectedText'});
+
+// content → background  
+chrome.runtime.sendMessage({type: 'addLabeledItem', data: item});
