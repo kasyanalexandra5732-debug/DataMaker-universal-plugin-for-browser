@@ -1,253 +1,268 @@
-// Состояние приложения
-let currentMode = 'collect';
-let collectedItems = [];
-
-// Загрузка данных при открытии
-document.addEventListener('DOMContentLoaded', async () => {
-    await loadData();
-    updateStats();
-    setupEventListeners();
-});
-
-
-// Настройка обработчиков событий
-function setupEventListeners() {
-    // Переключение режимов
-    document.getElementById('collectModeBtn').addEventListener('click', () => switchMode('collect'));
-    document.getElementById('labelModeBtn').addEventListener('click', () => switchMode('label'));
-    
-    // Кнопки сбора
-    document.getElementById('collectBtn').addEventListener('click', collectSelected);
-    document.getElementById('collectAllTextBtn').addEventListener('click', collectAllText);
-    document.getElementById('collectLinksBtn').addEventListener('click', collectLinks);
-    
-    // Кнопки разметки
-    document.querySelectorAll('.label-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => selectLabel(e.target.dataset.label));
-    });
-    
-    // Кастомная метка
-    document.getElementById('customLabelInput').addEventListener('input', (e) => {
-        if (e.target.value) {
-            document.getElementById('applyCustomLabelBtn').classList.remove('hidden');
-        }
-    });
-    
-    document.getElementById('applyCustomLabelBtn').addEventListener('click', () => {
-        const customLabel = document.getElementById('customLabelInput').value;
-        if (customLabel) selectLabel(customLabel);
-    });
-    
-    // Экспорт
-    document.getElementById('exportCSV').addEventListener('click', () => exportData('csv'));
-    document.getElementById('exportJSON').addEventListener('click', () => exportData('json'));
-    document.getElementById('clearAll').addEventListener('click', clearAll);
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-// Переключение режима
-function switchMode(mode) {
-    currentMode = mode;
-    
-    // Обновляем кнопки
-    document.getElementById('collectModeBtn').classList.toggle('active', mode === 'collect');
-    document.getElementById('labelModeBtn').classList.toggle('active', mode === 'label');
-    
-    // Показываем нужную панель
-    document.getElementById('collectPanel').classList.toggle('hidden', mode !== 'collect');
-    document.getElementById('labelPanel').classList.toggle('hidden', mode !== 'label');
-    
-    // Отправляем сообщение в контентный скрипт о смене режима
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {
-            type: 'modeChanged',
-            mode: mode
-        });
-    });
+body {
+    width: 400px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: #f5f7fa;
 }
 
-// Сбор выделенного текста
-async function collectSelected() {
-    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-    
-    chrome.tabs.sendMessage(tab.id, {type: 'getSelectedText'}, (response) => {
-        if (response && response.text) {
-            addItem({
-                text: response.text,
-                url: tab.url,
-                timestamp: new Date().toISOString(),
-                label: null
-            });
-        }
-    });
+.container {
+    padding: 16px;
 }
 
-// Сбор всего текста со страницы
-async function collectAllText() {
-    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-    
-    chrome.tabs.sendMessage(tab.id, {type: 'getAllText'}, (response) => {
-        if (response && response.text) {
-            addItem({
-                text: response.text.substring(0, 500) + '...', // Обрезаем длинный текст
-                url: tab.url,
-                timestamp: new Date().toISOString(),
-                label: null
-            });
-        }
-    });
+h1 {
+    font-size: 20px;
+    color: #2c3e50;
+    margin-bottom: 16px;
+    text-align: center;
 }
 
-// Сбор всех ссылок
-async function collectLinks() {
-    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-    
-    chrome.tabs.sendMessage(tab.id, {type: 'getLinks'}, (response) => {
-        if (response && response.links) {
-            response.links.forEach(link => {
-                addItem({
-                    text: link.text || link.url,
-                    url: link.url,
-                    timestamp: new Date().toISOString(),
-                    label: null,
-                    type: 'link'
-                });
-            });
-        }
-    });
+.stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 16px;
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-// Выбор метки
-function selectLabel(label) {
-    // Показываем что режим разметки активен
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {
-            type: 'labelSelected',
-            label: label
-        });
-    });
-    
-    // Показываем подсказку
-    alert(`Режим разметки: кликните на любой элемент страницы, чтобы пометить его как "${label}"`);
+.stat-item {
+    text-align: center;
 }
 
-// Добавление элемента
-async function addItem(item) {
-    collectedItems.push(item);
-    await saveData();
-    renderItems();
-    updateStats();
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-bottom: 4px;
 }
 
-// Удаление элемента
-async function deleteItem(index) {
-    collectedItems.splice(index, 1);
-    await saveData();
-    renderItems();
-    updateStats();
+.stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #3498db;
 }
 
-// Очистка всего
-async function clearAll() {
-    if (confirm('Удалить все собранные данные?')) {
-        collectedItems = [];
-        await saveData();
-        renderItems();
-        updateStats();
-    }
+.mode-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
-// Отрисовка элементов
-function renderItems() {
-    const container = document.getElementById('itemsContainer');
-    document.getElementById('itemCount').textContent = `(${collectedItems.length})`;
-    
-    if (collectedItems.length === 0) {
-        container.innerHTML = '<p class="hint">Нет данных. Начните сбор!</p>';
-        return;
-    }
-    
-    container.innerHTML = collectedItems.map((item, index) => `
-        <div class="data-item ${item.label ? 'labeled' : ''}">
-            <div class="text">${escapeHtml(item.text.substring(0, 100))}${item.text.length > 100 ? '...' : ''}</div>
-            <div class="meta">
-                <span>${new Date(item.timestamp).toLocaleString()}</span>
-                ${item.label ? `<span class="label-badge">${item.label}</span>` : ''}
-                <span class="delete-btn" data-index="${index}">🗑️</span>
-            </div>
-        </div>
-    `).join('');
-    
-    // Добавляем обработчики удаления
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const index = e.target.dataset.index;
-            deleteItem(index);
-        });
-    });
+.mode-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    background: #ecf0f1;
+    color: #7f8c8d;
+    cursor: pointer;
+    transition: all 0.3s;
 }
 
-// Обновление статистики
-function updateStats() {
-    const total = collectedItems.length;
-    const labeled = collectedItems.filter(item => item.label).length;
-    
-    document.getElementById('totalCount').textContent = total;
-    document.getElementById('labeledCount').textContent = labeled;
+.mode-btn.active {
+    background: #3498db;
+    color: white;
 }
 
-// Сохранение в chrome.storage
-async function saveData() {
-    await chrome.storage.local.set({collectedItems: collectedItems});
+.panel {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-// Загрузка из chrome.storage
-async function loadData() {
-    const result = await chrome.storage.local.get('collectedItems');
-    collectedItems = result.collectedItems || [];
-    renderItems();
+.hidden {
+    display: none;
 }
 
-// Экспорт данных
-function exportData(format) {
-    let content, filename, mimeType;
-    
-    if (format === 'json') {
-        content = JSON.stringify(collectedItems, null, 2);
-        filename = `datamarker_export_${Date.now()}.json`;
-        mimeType = 'application/json';
-    } else {
-        // CSV
-        const headers = ['text', 'url', 'timestamp', 'label', 'type'];
-        const rows = collectedItems.map(item => [
-            `"${item.text.replace(/"/g, '""')}"`,
-            `"${item.url}"`,
-            item.timestamp,
-            item.label || '',
-            item.type || 'text'
-        ]);
-        
-        content = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-        filename = `datamarker_export_${Date.now()}.csv`;
-        mimeType = 'text/csv';
-    }
-    
-    const blob = new Blob([content], {type: mimeType});
-    const url = URL.createObjectURL(blob);
-    
-    chrome.downloads.download({
-        url: url,
-        filename: filename,
-        conflictAction: 'uniquify'
-    });
+.hint {
+    font-size: 12px;
+    color: #95a5a6;
+    margin-bottom: 8px;
 }
 
-// Экранирование HTML
-function escapeHtml(unsafe) {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+.action-btn {
+    width: 100%;
+    padding: 10px;
+    background: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
 }
+
+.action-btn:hover {
+    background: #27ae60;
+}
+
+.quick-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.small-btn {
+    flex: 1;
+    padding: 6px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.small-btn:hover {
+    background: #2980b9;
+}
+
+.label-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.label-btn {
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+
+.label-btn:hover {
+    transform: scale(1.02);
+}
+
+.label-btn.positive {
+    background: #2ecc71;
+    color: white;
+}
+
+.label-btn.neutral {
+    background: #f39c12;
+    color: white;
+}
+
+.label-btn.negative {
+    background: #e74c3c;
+    color: white;
+}
+
+.label-btn.custom {
+    background: #9b59b6;
+    color: white;
+}
+
+.custom-input {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.data-list {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.data-list h3 {
+    font-size: 14px;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.data-item {
+    background: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 3px solid #3498db;
+    position: relative;
+}
+
+.data-item.labeled {
+    border-left-color: #2ecc71;
+}
+
+.data-item .text {
+    font-size: 12px;
+    margin-bottom: 4px;
+    word-break: break-word;
+}
+
+.data-item .meta {
+    font-size: 10px;
+    color: #7f8c8d;
+    display: flex;
+    justify-content: space-between;
+}
+
+.data-item .label-badge {
+    background: #3498db;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+}
+
+.data-item .delete-btn {
+    color: #e74c3c;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.export-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.export-btn {
+    flex: 1;
+    padding: 8px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.export-btn:hover {
+    background: #2980b9;
+}
+
+.clear-btn {
+    padding: 8px 12px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.clear-btn:hover {
+    background: #c0392b;
+} 
