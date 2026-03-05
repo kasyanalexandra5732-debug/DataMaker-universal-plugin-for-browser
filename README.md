@@ -1,3 +1,5 @@
+ВНИМАНИЕ: ЭТО АЛЬФА-ТЕСТОВОЕ ДЕМОНСТРАТИВНОЕ РАСШИРЕНИЕ ДЛЯ ПОРТФОЛИО, ФУНКЦИОНАЛ МОЖЕТ БЫТЬ НЕККОРЕКТНЫМ ИЛИ НЕДОРАБОТАННЫМ
+
 # DataMarker - Расширение для сбора и разметки данных
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
@@ -54,3 +56,4 @@ chrome.tabs.sendMessage(tabId, {type: 'getSelectedText'});
 
 // content → background  
 chrome.runtime.sendMessage({type: 'addLabeledItem', data: item});
+
