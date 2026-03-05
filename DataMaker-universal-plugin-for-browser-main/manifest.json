@@ -4,8 +4,9 @@
   "version": "1.0.0",
   "description": "Универсальный инструмент для сбора текстовых данных и их разметки прямо в браузере",
   "permissions": [
-    "storage",
+    "scripting",
     "activeTab",
+    "storage",
     "contextMenus",
     "downloads"
   ],
@@ -25,9 +26,15 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content/content.js"],
-      "css": ["content/content.css"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/content.js"
+      ],
+      "css": [
+        "content/content.css"
+      ]
     }
   ],
   "icons": {

@@ -266,3 +266,15 @@ h1 {
 .clear-btn:hover {
     background: #c0392b;
 } 
+
+/* Класс для скрытия панелей */
+.hidden {
+    display: none !important;
+}
+
+/* Стили для активной кнопки режима */
+.mode-btn.active {
+    background-color: #3498db;
+    color: white;
+    border-bottom: 2px solid #2980b9;
+}
