@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📊 DataMarker</h1>
+        
+        <!-- Статистика -->
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-label">Всего записей:</span>
+                <span id="totalCount" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Размечено:</span>
+                <span id="labeledCount" class="stat-value">0</span>
+            </div>
+        </div>
+
+        <!-- Режимы работы -->
+        <div class="mode-selector">
+            <button id="collectModeBtn" class="mode-btn active">📝 Сбор</button>
+            <button id="labelModeBtn" class="mode-btn">🏷️ Разметка</button>
+        </div>
+
+        <!-- Панель сбора -->
+        <div id="collectPanel" class="panel">
+            <p class="hint">🔍 Выделите текст на странице и нажмите:</p>
+            <button id="collectBtn" class="action-btn">➕ Добавить выделенное</button>
+            
+            <div class="quick-actions">
+                <button id="collectAllTextBtn" class="small-btn">📄 Весь текст</button>
+                <button id="collectLinksBtn" class="small-btn">🔗 Все ссылки</button>
+            </div>
+        </div>
+
+        <!-- Панель разметки -->
+        <div id="labelPanel" class="panel hidden">
+            <p class="hint">Выберите метку и кликните на элемент:</p>
+            
+            <div class="label-buttons">
+                <button class="label-btn positive" data-label="positive">😊 Positive</button>
+                <button class="label-btn neutral" data-label="neutral">😐 Neutral</button>
+                <button class="label-btn negative" data-label="negative">😞 Negative</button>
+                <button class="label-btn custom" data-label="custom">✨ Custom</button>
+            </div>
+            
+            <input type="text" id="customLabelInput" placeholder="Своя метка..." class="custom-input hidden">
+            <button id="applyCustomLabelBtn" class="small-btn hidden">Применить</button>
+        </div>
+
+        <!-- Список собранных данных -->
+        <div class="data-list">
+            <h3>Собранные данные <span id="itemCount">(0)</span></h3>
+            <div id="itemsContainer" class="items-container">
+                <!-- Сюда будут добавляться элементы -->
+            </div>
+        </div>
+
+        <!-- Кнопки экспорта -->
+        <div class="export-buttons">
+            <button id="exportCSV" class="export-btn">📥 Экспорт CSV</button>
+            <button id="exportJSON" class="export-btn">📥 Экспорт JSON</button>
+            <button id="clearAll" class="clear-btn">🗑️ Очистить всё</button>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <h1>DataMarker</h1>
+    <div id="status"></div>
+
+    <script src="../lib/utils.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>
+
+// popup/popup.js
+
+document.addEventListener('DOMContentLoaded', () => {
+    const statusDiv = document.getElementById('status');
+    
+    // Используем функцию из utils.js
+    const currentTime = formatDate(new Date());
+    
+    statusDiv.textContent = `Последнее обновление: ${currentTime}`;
+    logInfo("Попап открыт и данные обновлены.");
+});
